@@ -10,10 +10,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
-	"testing"
-	"time"
-
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	azfake "github.com/Azure/azure-sdk-for-go/sdk/azcore/fake"
@@ -22,21 +18,63 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4/fake"
 	"github.com/stretchr/testify/require"
+	"net/http"
+	"testing"
+	"time"
 )
 
-type fakeVirtualMachinesServer struct {
-	fake.VirtualMachinesServer
-}
+var fakeVirtualMachinesServer = fake.VirtualMachinesServer{
+	Get: func(ctx context.Context, resourceGroupName string, vmName string, options *armcompute.VirtualMachinesClientGetOptions) (resp azfake.Responder[armcompute.VirtualMachinesClientGetResponse], err azfake.ErrorResponder) {
+		resp = azfake.Responder[armcompute.VirtualMachinesClientGetResponse]{}
+		resp.Set(armcompute.VirtualMachinesClientGetResponse{
+			VirtualMachine: armcompute.VirtualMachine{
+				Name: to.Ptr(vmName),
+				ID:   to.Ptr(fmt.Sprintf("/subscriptions/subscriptionID/resourceGroups/%s/providers/Microsoft.Compute/virtualMachines/%s", resourceGroupName, vmName)),
+			},
+		})
+		return
+	},
 
-func (v *fakeVirtualMachinesServer) Get(ctx context.Context, resourceGroupName string, vmName string, options *armcompute.VirtualMachinesClientGetOptions) (resp fake.Responder[armcompute.VirtualMachinesClientGetResponse], err fake.ErrorResponder) {
-	resp = fake.Responder[armcompute.VirtualMachinesClientGetResponse]{}
-	resp.Set(armcompute.VirtualMachinesClientGetResponse{
-		VirtualMachine: armcompute.VirtualMachine{
-			Name: to.Ptr(vmName),
-			ID:   to.Ptr(fmt.Sprintf("/subscriptions/subscriptionID/resourceGroups/%s/providers/Microsoft.Compute/virtualMachines/%s", resourceGroupName, vmName)),
-		},
-	})
-	return
+	BeginDelete: func(ctx context.Context, resourceGroupName string, vmName string, options *armcompute.VirtualMachinesClientBeginDeleteOptions) (resp azfake.PollerResponder[armcompute.VirtualMachinesClientDeleteResponse], err azfake.ErrorResponder) {
+		resp = azfake.PollerResponder[armcompute.VirtualMachinesClientDeleteResponse]{}
+		resp.AddNonTerminalResponse(nil)
+		resp.AddNonTerminalResponse(nil)
+		resp.SetTerminalError("VM not existed", http.StatusNotFound)
+		return resp, azfake.ErrorResponder{}
+	},
+
+	NewListPager: func(resourceGroupName string, options *armcompute.VirtualMachinesClientListOptions) (resp azfake.PagerResponder[armcompute.VirtualMachinesClientListResponse]) {
+		resp = azfake.PagerResponder[armcompute.VirtualMachinesClientListResponse]{}
+		resp.AddPage(armcompute.VirtualMachinesClientListResponse{
+			VirtualMachineListResult: armcompute.VirtualMachineListResult{
+				Value: []*armcompute.VirtualMachine{
+					{
+						Name: to.Ptr("vm1"),
+					},
+					{
+						Name: to.Ptr("vm2"),
+					},
+					{
+						Name: to.Ptr("vm3"),
+					},
+				},
+			},
+		}, nil)
+		resp.AddError(errors.New("network issue"))
+		resp.AddPage(armcompute.VirtualMachinesClientListResponse{
+			VirtualMachineListResult: armcompute.VirtualMachineListResult{
+				Value: []*armcompute.VirtualMachine{
+					{
+						Name: to.Ptr("vm4"),
+					},
+					{
+						Name: to.Ptr("vm5"),
+					},
+				},
+			},
+		}, nil)
+		return resp
+	},
 }
 
 func Test_VirtualMachinesClient_Get(t *testing.T) {
@@ -52,7 +90,7 @@ func Test_VirtualMachinesClient_Get(t *testing.T) {
 	// TODO: populate vm with response from fake
 	client, err := armcompute.NewVirtualMachinesClient("subscriptionID", azfake.NewTokenCredential(), &arm.ClientOptions{
 		ClientOptions: azcore.ClientOptions{
-			Transport: fake.NewVirtualMachinesServerTransport(&fakeVirtualMachinesServer{}),
+			Transport: fake.NewVirtualMachinesServerTransport(&fakeVirtualMachinesServer),
 		},
 	})
 	require.NoError(t, err)
@@ -67,14 +105,6 @@ func Test_VirtualMachinesClient_Get(t *testing.T) {
 	require.Contains(t, *vm.ID, resourceGroupName)
 }
 
-func (v *fakeVirtualMachinesServer) BeginDelete(ctx context.Context, resourceGroupName string, vmName string, options *armcompute.VirtualMachinesClientBeginDeleteOptions) (resp fake.PollerResponder[armcompute.VirtualMachinesClientDeleteResponse], err fake.ErrorResponder) {
-	resp = fake.PollerResponder[armcompute.VirtualMachinesClientDeleteResponse]{}
-	resp.AddNonTerminalResponse(nil)
-	resp.AddNonTerminalResponse(nil)
-	resp.SetTerminalError("VM not existed", http.StatusNotFound)
-	return resp, fake.ErrorResponder{}
-}
-
 func Test_VirtualMachinesClient_BeginDelete(t *testing.T) {
 	// write a fake for VirtualMachinesClient.BeginDelete that satisfies the following requirements
 
@@ -87,7 +117,7 @@ func Test_VirtualMachinesClient_BeginDelete(t *testing.T) {
 	// the fake should include at least one non-terminal response.
 	client, err := armcompute.NewVirtualMachinesClient("subscriptionID", azfake.NewTokenCredential(), &arm.ClientOptions{
 		ClientOptions: azcore.ClientOptions{
-			Transport: fake.NewVirtualMachinesServerTransport(&fakeVirtualMachinesServer{}),
+			Transport: fake.NewVirtualMachinesServerTransport(&fakeVirtualMachinesServer),
 		},
 	})
 	require.NoError(t, err)
@@ -99,39 +129,6 @@ func Test_VirtualMachinesClient_BeginDelete(t *testing.T) {
 	require.Error(t, pollingErr)
 	var respErr *azcore.ResponseError
 	require.ErrorAs(t, pollingErr, &respErr)
-}
-
-func (v *fakeVirtualMachinesServer) NewListPager(resourceGroupName string, options *armcompute.VirtualMachinesClientListOptions) (resp fake.PagerResponder[armcompute.VirtualMachinesClientListResponse]) {
-	resp = fake.PagerResponder[armcompute.VirtualMachinesClientListResponse]{}
-	resp.AddPage(armcompute.VirtualMachinesClientListResponse{
-		VirtualMachineListResult: armcompute.VirtualMachineListResult{
-			Value: []*armcompute.VirtualMachine{
-				{
-					Name: to.Ptr("vm1"),
-				},
-				{
-					Name: to.Ptr("vm2"),
-				},
-				{
-					Name: to.Ptr("vm3"),
-				},
-			},
-		},
-	}, nil)
-	resp.AddError(errors.New("Network issue"))
-	resp.AddPage(armcompute.VirtualMachinesClientListResponse{
-		VirtualMachineListResult: armcompute.VirtualMachineListResult{
-			Value: []*armcompute.VirtualMachine{
-				{
-					Name: to.Ptr("vm4"),
-				},
-				{
-					Name: to.Ptr("vm5"),
-				},
-			},
-		},
-	}, nil)
-	return resp
 }
 
 func Test_VirtualMachinesClient_NewListPager(t *testing.T) {
@@ -147,7 +144,7 @@ func Test_VirtualMachinesClient_NewListPager(t *testing.T) {
 
 	client, err := armcompute.NewVirtualMachinesClient("subscriptionID", azfake.NewTokenCredential(), &arm.ClientOptions{
 		ClientOptions: azcore.ClientOptions{
-			Transport: fake.NewVirtualMachinesServerTransport(&fakeVirtualMachinesServer{}),
+			Transport: fake.NewVirtualMachinesServerTransport(&fakeVirtualMachinesServer),
 		},
 	})
 	require.NoError(t, err)
@@ -168,7 +165,7 @@ func Test_VirtualMachinesClient_NewListPager(t *testing.T) {
 			errCount += 1
 		} else {
 			pageCount += 1
-			for _ = range page.Value {
+			for range page.Value {
 				vmCount += 1
 			}
 		}

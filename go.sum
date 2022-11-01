@@ -1,11 +1,11 @@
-github.com/Azure/azure-sdk-for-go/sdk/azcore v1.1.5-0.20221012195700-5c61dd287758 h1:0egw1Exvc0AfK89PrRaZbovHVckyNo/jgLPEU+ozn4c=
-github.com/Azure/azure-sdk-for-go/sdk/azcore v1.1.5-0.20221012195700-5c61dd287758/go.mod h1:uGG2W01BaETf0Ozp+QxxKJdMBNRWPdstHG0Fmdwn1/U=
+github.com/Azure/azure-sdk-for-go/sdk/azcore v1.1.5-0.20221031222938-b271626a785f h1:w4oxymr/GIfab3BxEbcDbdKCH5kKjQk5scTVqufXEG4=
+github.com/Azure/azure-sdk-for-go/sdk/azcore v1.1.5-0.20221031222938-b271626a785f/go.mod h1:uGG2W01BaETf0Ozp+QxxKJdMBNRWPdstHG0Fmdwn1/U=
 github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.0.0 h1:Yoicul8bnVdQrhDMTHxdEckRGX01XvwXDHUT9zYZ3k0=
 github.com/Azure/azure-sdk-for-go/sdk/internal v1.0.0 h1:jp0dGvZ7ZK0mgqnTSClMxa5xuRL7NZgHameVYF6BurY=
 github.com/Azure/azure-sdk-for-go/sdk/internal v1.0.0/go.mod h1:eWRD7oawr1Mu1sLCawqVc0CUiF43ia3qQMxLscsKQ9w=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v3 v3.0.1 h1:H3g2mkmu105ON0c/Gqx3Bm+bzoIijLom8LmV9Gjn7X0=
-github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4 v4.0.1-0.20221013174712-780cebca2b4a h1:IdaBbmlROLhfuxMh8YWCNjyqQPJZB/eERuKWEIrHc5Y=
-github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4 v4.0.1-0.20221013174712-780cebca2b4a/go.mod h1:Lyx+AVavbAlCE9H6cDmnc9RfhOKQAcM27BGb+KjBpAU=
+github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4 v4.0.1-0.20221031230150-3607e39753c7 h1:qfPhPLuKvtPrN+9++r9+L0a6zGcvblc2wqnu3TSBzks=
+github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4 v4.0.1-0.20221031230150-3607e39753c7/go.mod h1:rP++aVhbJ/uYjDfqalfuGWZFB1u/RIinCYjkAlpavmA=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/internal v1.0.0 h1:lMW1lD/17LUA5z1XTURo7LcVG2ICBPlyMHjIUrcFZNQ=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork v1.0.0 h1:nBy98uKOIfun5z6wx6jwWLrULcM0+cjBalBFZlEZ7CA=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources v1.0.0 h1:ECsQtyERDVz3NP3kvDOTLvbQhqWp/x9EsGKtb4ogUr8=

@@ -3,8 +3,8 @@ module fakesuserstudy
 go 1.18
 
 require (
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.1.5-0.20221012195700-5c61dd287758
-	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4 v4.0.1-0.20221013174712-780cebca2b4a
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.1.5-0.20221031222938-b271626a785f
+	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4 v4.0.1-0.20221031230150-3607e39753c7
 	github.com/stretchr/testify v1.7.0
 )
 
