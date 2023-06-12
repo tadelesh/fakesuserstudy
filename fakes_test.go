@@ -7,73 +7,135 @@
 package fakesuserstudy
 
 import (
+	"context"
+	"net/http"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
 	"github.com/stretchr/testify/require"
 )
 
+// docs https://pkg.go.dev/github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5@v5.1.0-beta.1#readme-fakes
+// see https://pkg.go.dev/github.com/Azure/azure-sdk-for-go/sdk/azcore@v1.7.0-beta.2/fake for general docs on fakes
+
 func Test_VirtualMachinesClient_Get(t *testing.T) {
-	// write a fake for VirtualMachinesClient.Get that satisfies the following requirements
+	// write a fake for VirtualMachinesClient.Get that includes the following data
 
 	const (
-		vmName            = "virtualmachine1"
-		resourceGroupName = "fake-resource-group"
+		// the name of the VM returned from VirtualMachinesClient.Get
+		vmName = "virtualmachine1"
+
+		// the resource ID of the VM returned from VirtualMachinesClient.Get
+		resourceID = "/fake/resource/id"
 	)
 
-	// the fake VM must return the provided name and its ID contain the provided resource group name.
+	// TODO: write fake here
 
-	// TODO: populate vm with response from fake
-	var vm armcompute.VirtualMachine
+	// TODO: create client and connect it to the fake
+	var client armcompute.VirtualMachinesClient
 
-	// the returned VM must satisfy the following conditions
+	vm, err := client.Get(context.Background(), "fake-resource-group", vmName, nil)
+
+	// the result must satisfy the following conditions
+	require.NoError(t, err)
 	require.NotNil(t, vm.Name)
-	require.Equal(t, vmName, *vm.Name)
+	require.EqualValues(t, vmName, *vm.Name)
 	require.NotNil(t, vm.ID)
-	require.Contains(t, *vm.ID, resourceGroupName)
+	require.EqualValues(t, resourceID, *vm.ID)
 }
 
-func Test_VirtualMachinesClient_BeginDelete(t *testing.T) {
-	// write a fake for VirtualMachinesClient.BeginDelete that satisfies the following requirements
+func Test_VirtualMachinesClient_Get_error(t *testing.T) {
+	// write a fake for VirtualMachinesClient.Get that includes the following data
 
 	const (
-		vmName            = "virtualmachine1"
-		resourceGroupName = "fake-resource-group"
+		// the HTTP status code of the failed request
+		httpError = http.StatusBadRequest
+
+		// the error code of the failed request
+		errorCode = "ErrorResourceNotFound"
 	)
 
-	// TODO: populate pollingErr with the error after polling completes.
-	// the fake should include at least one non-terminal response.
-	var pollingErr error
+	// TODO: write fake here
 
-	// the LRO must terminate in a way to satisfy the following conditions
-	require.Error(t, pollingErr)
+	// TODO: create client and connect it to the fake
+	var client armcompute.VirtualMachinesClient
+
+	vm, err := client.Get(context.Background(), "fake-resource-group", "virtualmachine1", nil)
+
+	// the result must satisfy the following conditions
+	require.Zero(t, vm)
 	var respErr *azcore.ResponseError
-	require.ErrorAs(t, pollingErr, &respErr)
+	require.ErrorAs(t, err, &respErr)
+	require.EqualValues(t, httpError, respErr.StatusCode)
+	require.EqualValues(t, errorCode, respErr.ErrorCode)
+}
+
+func Test_VirtualMachinesClient_BeginCreateOrUpdate(t *testing.T) {
+	// write a fake for VirtualMachinesClient.BeginCreateOrUpdate that includes the following data
+
+	const (
+		// the name of the VM returned when the long-running operation completes
+		vmName = "virtualmachine1"
+
+		// the resource ID of the VM returned when the long-running operation completes
+		resourceID = "/fake/resource/id"
+	)
+
+	// TODO: write fake here. the poller must include two non-terminal responses
+
+	// TODO: create client and connect it to the fake
+	var client armcompute.VirtualMachinesClient
+
+	poller, err := client.BeginCreateOrUpdate(context.Background(), "fake-resource-group", vmName, armcompute.VirtualMachine{}, nil)
+	require.NoError(t, err)
+
+	pollingIterations := 0
+
+	for !poller.Done() {
+		resp, err := poller.Poll(context.Background())
+		require.NoError(t, err)
+		require.EqualValues(t, http.StatusOK, resp.StatusCode)
+
+		pollingIterations++
+	}
+
+	require.EqualValues(t, 2, pollingIterations)
+
+	vm, err := poller.Result(context.Background())
+
+	// the result must satisfy the following conditions
+	require.NoError(t, err)
+	require.NotNil(t, vm.Name)
+	require.EqualValues(t, vmName, *vm.Name)
+	require.NotNil(t, vm.ID)
+	require.EqualValues(t, resourceID, *vm.ID)
 }
 
 func Test_VirtualMachinesClient_NewListPager(t *testing.T) {
-	// write a fake for VirtualMachinesClient.NewListPager that satisfies the following requirements
-
-	const (
-		resourceGroupName = "fake-resource-group"
-	)
-
-	// the fake must return a total of five VMs over two pages.
+	// write a fake for VirtualMachinesClient.NewListPager that returns a total of
+	// five VMs spread over two pages. the first page should include three VMs and
+	// the second page should contain two VMs.
 	// to keep things simple, the returned armcompute.VirtualMachine instances can be empty.
-	// while iterating over pages, the fake must return one transient error before the final page
 
-	// TODO: populate vmCount with the number of VMs returned
-	var vmCount int
+	// TODO: write fake here
 
-	// TODO: populate pageCount with the number of returned pages
-	var pageCount int
+	// TODO: create client and connect it to the fake
+	var client armcompute.VirtualMachinesClient
 
-	// TODO: populate errCount with the number of transient errors encountered during paging
-	var errCount int
+	pager := client.NewListPager("fake-resource-group", nil)
+
+	pageCount := 0
+	vmCount := 0
+
+	for pager.More() {
+		page, err := pager.NextPage(context.Background())
+		require.NoError(t, err)
+		pageCount++
+		vmCount += len(page.Value)
+	}
 
 	// the results must satisfy the following conditions
-	require.Equal(t, 5, vmCount)
-	require.Equal(t, 2, pageCount)
-	require.Equal(t, 1, errCount)
+	require.EqualValues(t, 2, pageCount)
+	require.EqualValues(t, 5, vmCount)
 }
