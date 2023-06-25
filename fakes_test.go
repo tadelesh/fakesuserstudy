@@ -12,7 +12,11 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
+	azfake "github.com/Azure/azure-sdk-for-go/sdk/azcore/fake"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5/fake"
 	"github.com/stretchr/testify/require"
 )
 
@@ -31,9 +35,28 @@ func Test_VirtualMachinesClient_Get(t *testing.T) {
 	)
 
 	// TODO: write fake here
+	fakeVirtualMachinesServer := fake.VirtualMachinesServer{
+		Get: func(ctx context.Context, resourceGroupName, vmName string, options *armcompute.VirtualMachinesClientGetOptions) (resp azfake.Responder[armcompute.VirtualMachinesClientGetResponse], errResp azfake.ErrorResponder) {
+			resp = azfake.Responder[armcompute.VirtualMachinesClientGetResponse]{}
+			resp.SetResponse(http.StatusOK, armcompute.VirtualMachinesClientGetResponse{
+				VirtualMachine: armcompute.VirtualMachine{
+					Name: to.Ptr(vmName),
+					ID:   to.Ptr("/fake/resource/id"),
+				},
+			}, nil)
+
+			return
+		},
+	}
 
 	// TODO: create client and connect it to the fake
-	var client armcompute.VirtualMachinesClient
+	var client *armcompute.VirtualMachinesClient
+	client, err := armcompute.NewVirtualMachinesClient("subscriptionId", azfake.NewTokenCredential(), &arm.ClientOptions{
+		ClientOptions: azcore.ClientOptions{
+			Transport: fake.NewVirtualMachinesServerTransport(&fakeVirtualMachinesServer),
+		},
+	})
+	require.NoError(t, err)
 
 	vm, err := client.Get(context.Background(), "fake-resource-group", vmName, nil)
 
@@ -57,9 +80,21 @@ func Test_VirtualMachinesClient_Get_error(t *testing.T) {
 	)
 
 	// TODO: write fake here
+	fakeVirtualMachinesServer := fake.VirtualMachinesServer{
+		Get: func(ctx context.Context, resourceGroupName, vmName string, options *armcompute.VirtualMachinesClientGetOptions) (resp azfake.Responder[armcompute.VirtualMachinesClientGetResponse], errResp azfake.ErrorResponder) {
+			errResp.SetResponseError(http.StatusBadRequest, errorCode)
+			return
+		},
+	}
 
 	// TODO: create client and connect it to the fake
-	var client armcompute.VirtualMachinesClient
+	var client *armcompute.VirtualMachinesClient
+	client, err := armcompute.NewVirtualMachinesClient("subscriptionId", azfake.NewTokenCredential(), &arm.ClientOptions{
+		ClientOptions: azcore.ClientOptions{
+			Transport: fake.NewVirtualMachinesServerTransport(&fakeVirtualMachinesServer),
+		},
+	})
+	require.NoError(t, err)
 
 	vm, err := client.Get(context.Background(), "fake-resource-group", "virtualmachine1", nil)
 
@@ -83,9 +118,30 @@ func Test_VirtualMachinesClient_BeginCreateOrUpdate(t *testing.T) {
 	)
 
 	// TODO: write fake here. the poller must include two non-terminal responses
+	fakeVirtualMachinesServer := fake.VirtualMachinesServer{
+		BeginCreateOrUpdate: func(ctx context.Context, resourceGroupName, vmName string, parameters armcompute.VirtualMachine, options *armcompute.VirtualMachinesClientBeginCreateOrUpdateOptions) (resp azfake.PollerResponder[armcompute.VirtualMachinesClientCreateOrUpdateResponse], errResp azfake.ErrorResponder) {
+			resp = azfake.PollerResponder[armcompute.VirtualMachinesClientCreateOrUpdateResponse]{}
+			resp.AddNonTerminalResponse(http.StatusOK, nil)
+			resp.AddNonTerminalResponse(http.StatusOK, nil)
+			resp.SetTerminalResponse(http.StatusOK, armcompute.VirtualMachinesClientCreateOrUpdateResponse{
+				VirtualMachine: armcompute.VirtualMachine{
+					ID:   to.Ptr(resourceID),
+					Name: to.Ptr(vmName),
+				},
+			}, nil)
+
+			return
+		},
+	}
 
 	// TODO: create client and connect it to the fake
-	var client armcompute.VirtualMachinesClient
+	var client *armcompute.VirtualMachinesClient
+	client, err := armcompute.NewVirtualMachinesClient("subscriptionId", azfake.NewTokenCredential(), &arm.ClientOptions{
+		ClientOptions: azcore.ClientOptions{
+			Transport: fake.NewVirtualMachinesServerTransport(&fakeVirtualMachinesServer),
+		},
+	})
+	require.NoError(t, err)
 
 	poller, err := client.BeginCreateOrUpdate(context.Background(), "fake-resource-group", vmName, armcompute.VirtualMachine{}, nil)
 	require.NoError(t, err)
@@ -119,9 +175,41 @@ func Test_VirtualMachinesClient_NewListPager(t *testing.T) {
 	// to keep things simple, the returned armcompute.VirtualMachine instances can be empty.
 
 	// TODO: write fake here
+	fakeVirtualMachinesServer := fake.VirtualMachinesServer{
+		NewListPager: func(resourceGroupName string, options *armcompute.VirtualMachinesClientListOptions) (resp azfake.PagerResponder[armcompute.VirtualMachinesClientListResponse]) {
+			resp = azfake.PagerResponder[armcompute.VirtualMachinesClientListResponse]{}
+
+			resp.AddPage(http.StatusOK, armcompute.VirtualMachinesClientListResponse{
+				VirtualMachineListResult: armcompute.VirtualMachineListResult{
+					Value: []*armcompute.VirtualMachine{
+						{},
+						{},
+						{},
+					},
+				},
+			}, nil)
+
+			resp.AddPage(http.StatusOK, armcompute.VirtualMachinesClientListResponse{
+				VirtualMachineListResult: armcompute.VirtualMachineListResult{
+					Value: []*armcompute.VirtualMachine{
+						{},
+						{},
+					},
+				},
+			}, nil)
+
+			return
+		},
+	}
 
 	// TODO: create client and connect it to the fake
-	var client armcompute.VirtualMachinesClient
+	var client *armcompute.VirtualMachinesClient
+	client, err := armcompute.NewVirtualMachinesClient("subscriptionId", azfake.NewTokenCredential(), &arm.ClientOptions{
+		ClientOptions: azcore.ClientOptions{
+			Transport: fake.NewVirtualMachinesServerTransport(&fakeVirtualMachinesServer),
+		},
+	})
+	require.NoError(t, err)
 
 	pager := client.NewListPager("fake-resource-group", nil)
 
